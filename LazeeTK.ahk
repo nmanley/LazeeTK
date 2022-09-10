@@ -68,7 +68,7 @@ OnExit("ExitCleanup")
 Global logger := new LZLogger()
 Global tkmemory := new LZMemory()
 Global clients := []
-Global usernames := ["cPlusPlus"]
+Global usernames := ["USERNAME"]
 
 
 for i, username in usernames {
@@ -106,11 +106,8 @@ clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("Test
 
 while true {
 
-  for i, client in clients {
-    event := client.eventStack.processStack()
-      
-    
-  }
+  for i, client in clients
+    client.eventStack.processStack()   
 
   Sleep 20
 }
