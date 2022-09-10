@@ -1,15 +1,18 @@
 # LazeeTK
  NexusTK Scripting Framework
 
-!~!~! Project is still in Alpha and many features are still broken or are undergoing testing
+<strong>Project is still in Alpha and many features are still broken or are undergoing testing</strong>
 
-Usage:
-   update clients array with the username of your logged in character.
+<strong>Usage:</strong>
+   <ol>
+     <li>update clients array with the username of your logged in character.</li>
+     <li>subscribe to an event</li>   
+   </ol>
    
-   subscribe to an event
-   subscription := new Subscription("My-Subscription-Name", BoundMethodOrFuncCall, 1, -1)
-   client.subscribeTo("EVENT-NAME", subscription)
-   
+   <span>
+   subscription := new Subscription("My-Subscription-Name", BoundMethodOrFuncCall, 1, -1)<br />
+   client.subscribeTo("EVENT-NAME", subscription)<br />
+   <br />
    When the event is triggered, that event object is passed to the call back method or function.
    
    
