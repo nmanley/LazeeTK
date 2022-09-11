@@ -24,8 +24,6 @@ RunAs, Administrator
 SendMode, Event
 DetectHiddenWindows On
 SetWorkingDir, %A_ScriptDir%
-Global debugEnabled := true
-
 SetKeyDelay -1, -1
 ListLines Off
 
@@ -60,9 +58,12 @@ OnExit("ExitCleanup")
 #Include lib/EventStack.ahk
 
 #Include events/BaseEvent.ahk
-#Include events/MoveEvent.ahk
+#Include events/ClientMoveEvent.ahk
 #Include events/ManaChangeEvent.ahk
 #Include events/VitaChangeEvent.ahk
+#Include events/GoldChangeEvent.ahk
+#Include events/ExpChangeEvent.ahk
+#Include events/ItemChangeEvent.ahk
 
 ;#Include lib/EventStack.ahk
 
@@ -71,7 +72,7 @@ Global logger := new LZLogger()
 Global tkmemory := new LZMemory()
 
 Global clients := []
-Global usernames := ["USERNAME"]
+Global usernames := ["cPlusPlus"]
 
 
 for i, username in usernames {
@@ -90,20 +91,19 @@ for i, username in usernames {
     }
 }
 
-TestFunction(event) {
-  if (event.name = "mana-change")
-    logger.INFO(Format("Mana Change Event: Diff {:s}, Current: {:s}", event.manaDiff, event.manaCurrent))
-  else
-    logger.INFO(Format("Vita Change Event: Diff {:s}, Current: {:s}", event.vitaDiff, event.vitaCurrent))
-} 
-
-MoveFunction(event) {
-  logger.INFO(event.loggerOutput())
+EventDebugFunction(event) 
+{
+  logger.info(event.loggerOutput())
 }
 
-clients[1].subscribeTo("client-move", new Subscription("move", Func("MoveFunction"), 1, -1))
-clients[1].subscribeTo("mana-change", new Subscription("mana-change", Func("TestFunction"), 1, -1))
-clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("TestFunction"), 1, -1))
+clients[1].subscribeTo("item-change", new Subscription("itemWatcher", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("gold-change", new Subscription("goldWatcher", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("exp-change", new Subscription("expWatcher", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("map-change", new Subscription("mapWatcher", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("client-move", new Subscription("move", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("mana-change", new Subscription("mana-change", Func("EventDebugFunction"), 1, -1))
+clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("EventDebugFunction"), 1, -1))
+
 
 
 while true {
@@ -122,7 +122,7 @@ ExitCleanup(reason, code)
   for i, client in clients
     client.detach()
 
-  Stdout("Cleanup Successful!")
+  Stdout("Shutting down. Goodbye!")
   ExitApp
 }
 

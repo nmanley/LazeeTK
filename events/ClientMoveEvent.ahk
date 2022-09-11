@@ -18,11 +18,8 @@
   *
   */
 
-class MoveEvent
+class ClientMoveEvent extends BaseEvent
 {
-    name := "client-move"
-    client := 0
-
     currentPos := -1
     previousPos := -1
 
@@ -34,19 +31,20 @@ class MoveEvent
 
     __New(ByRef client, payload)
     {
+        this.name := "client-move"
         this.client := client
         
         this.currentPos := payload.currentPos
         this.previousPos := payload.previousPos
 
         this.mapName := payload.mapName
-        this.oldMapName := ""
+        this.oldMapName := payload.oldMapName
 
         this.distance := this.currentPos.distanceFrom(this.previousPos.xpos, this.previousPos.ypos)
     }
 
     loggerOutput()
     {
-      return Format("Client moved from: [{:i},{:i}] -> [{:i},{:i}] Distance: {:i}", this.previousPos.xpos, this.previousPos.ypos, this.currentPos.xpos, this.currentPos.ypos, this.distance)
+      return Format("Client {:s} moved from: [{:i},{:i}] -> [{:i},{:i}] Distance: {:i}", this.client.name, this.previousPos.xpos, this.previousPos.ypos, this.currentPos.xpos, this.currentPos.ypos, this.distance)
     }
 }

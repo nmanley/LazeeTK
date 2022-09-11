@@ -23,6 +23,7 @@ class BaseEvent
     uuid := ""   
     name := ""
     data := ""
+    client := -1
     
     ; Reference to the source of where the event was emitted from
     emittedFrom := 0
@@ -33,24 +34,16 @@ class BaseEvent
     ; Do we allow callbacks to take place on this Event?            
     permitCallbacks := true
 
-    client := -1
     dataset := {}
-
-    __New(ByRef client, dataset)
-    {
-        this.client := client
-        this.dataset := dataset
-    }
     
     flattenDataValues(dataset)
     {
         response := ""
-        MsgBox %ty%
 
         if (IsObject(dataset) || (dataset[1] is integer)) {
 
             for key, value in dataset {
-                if (IsObject(value) ||(dataset[1] is integer)) {
+                if (IsObject(value) || (dataset[1] is integer)) {
                     ; Recursive calling
                     response .= Format(" [{:s} => {s:}] ", key, this.flattenDataValues(value))
                 }
@@ -61,10 +54,5 @@ class BaseEvent
         }
 
         return response
-    }
-
-    __Get(property)
-    {
-        return 
     }
 }

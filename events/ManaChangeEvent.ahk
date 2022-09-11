@@ -64,4 +64,9 @@ class ManaChangeEvent extends BaseEvent
     {
         return ((this.manaCurrent / this.manaMax) * 100 < percent) ? true : false
     }
+
+    loggerOutput()
+    {
+        return Format("Mana Change Event: Diff {:s}, Current: {:s}", this.manaDiff, this.manaCurrent)
+    }
 }

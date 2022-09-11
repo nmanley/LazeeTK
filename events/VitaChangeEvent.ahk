@@ -19,7 +19,7 @@
   */
 
 class VitaChangeEvent extends BaseEvent
-{    
+{  
     vitaDiff := 0
     vitaMaxDiff := 0
     
@@ -63,5 +63,10 @@ class VitaChangeEvent extends BaseEvent
     assertBelowPercentage(percent)
     {
         return ((this.vitaCurrent / this.vitaMax) * 100 < percent) ? true : false
+    }
+
+    loggerOutput()
+    {
+        return Format("Vita Change Event: Diff {:s}, Current: {:s}", this.vitaDiff, this.vitaCurrent)
     }
 }

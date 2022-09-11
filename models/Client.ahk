@@ -38,7 +38,7 @@ class LZClient {
     gold                    := 0
     exp                     := 0
     mapName                 := ""
-    inventory               := [] ; Array of inventory items
+    items                   := 0  ; Object of inventory items
     spells                  := [] ; Spells Inventory
 
     party                   := {} ; Group/Party
@@ -71,6 +71,8 @@ class LZClient {
         if (username != false) {
             this.attach(username)
         }
+
+        this.items := ComObjCreate("Scripting.Dictionary")
     }
 
     /**
@@ -147,7 +149,7 @@ class LZClient {
         this.timers.Push(new LZTimer("client-local", this, this.update__clientLocal, 400, -1))
         ;this.timers.Push(new LZTimer("update_map", this, this.update__map, 1000, -1))
         ;this.timers.Push(new LZTimer("entities", this, this.update__entities, 800, -1))
-        this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 400, -1))
+        this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 450, -1))
         this.timers.Push(new LZTimer("items", this, this.update__items, 1000, -1))
         this.timers.Push(new LZTimer("spells", this, this.update__spells, 600000, -1))
         ;this.timers.Push(new LZTimer(this, this.outputEntities, 1000, -1))
@@ -168,6 +170,21 @@ class LZClient {
     subscribeTo(name, subscription)
     {
         return this.eventStack.subscribeTo(name, subscription)
+    }
+
+    /**
+      * Emit Event
+      * Pushes an event onto the event stack
+      * 
+      * TODO: N/A
+      * STATUS: Working
+      *
+      * @param [Event] event
+      * @return bool
+      */
+    emitEvent(event)
+    {
+        return this.eventStack.push(event)
     }
 
     /**
@@ -226,17 +243,16 @@ class LZClient {
         this.mapName := tkm.mapName.readStringFromBuffer(buf)
         
         if (xpos != this.xpos or ypos != this.ypos) 
-            this.eventStack.push(new MoveEvent(this, {currentPos: new Coordinate(this.xpos, this.ypos), previousPos: new Coordinate(xpos, ypos), mapName: this.mapName, oldMapName: mapName}))
+            this.emitEvent(new ClientMoveEvent(this, {currentPos: new Coordinate(this.xpos, this.ypos), previousPos: new Coordinate(xpos, ypos), mapName: this.mapName, oldMapName: mapName}))
 
-        if (map != this.mapName) {
-            this.eventsStack.push(new LZEvent("map-change", {prev: map, new: this.mapName}))
-        }  
+        if (map != this.mapName)
+            this.emitEvent(new MapChangeEvent(this, {mapName: this.mapName, oldMapName: mapName}))
         
         if (gold != this.gold)
-            this.eventStack.push(new LZEvent("gold-change", {prev: gold, new: this.gold}))
+            this.emitEvent(new GoldChangeEvent(this, {amount: this.gold, oldAmount: gold}))
 
         if (exp != this.exp)
-            this.eventStack.push(new LZEvent("exp-change", {prev: exp, new: this.exp}))
+            this.emitEvent(new ExpChangeEvent(this, {amount: this.exp, oldAmount: exp}))
         
         ; Changes in Mana
         if (manaCurrent != this.manaCurrent || manaMax != this.manaMax)
@@ -323,7 +339,7 @@ class LZClient {
     update__items() {
 
         tkm := tkmemory.items
-        newItems := []
+        newItems := ComObjCreate("Scripting.Dictionary")
         index := 0
 
         while index < 52 {
@@ -336,26 +352,52 @@ class LZClient {
 
             item := new Item(alphaIndex, buf)
             
+            
             if (item.name != "") {
                 
-                itemExists := false
-                for c, cItem in this.items {
-                    If (cItem.itemName = item.itemName AND cItem.letter = item.letter)
-                        itemExists := true
+                itemExists := (this.items.Exists(alphaIndex) AND this.items.Item[alphaIndex].name = item.name) ? true : false
+                
+                /*
+                if (this.items.Exists(alphaIndex)) {
+
+                    oldItem := this.items.Item[alphaIndex]
+                    if(oldItem.itemName = item.itemName AND oldItem.letter = item.letter)
                 }
+                if (this.items.Exists(alphaIndex) AND this.items.Item[alphaIndex].itemName = item.itemName AND this.items) {
+                    itemExists := true
+
+                    ; Item Used
+                    if (this.items.Item[alphaIndex].qty < item.qty) {
+                        ; Ambiguous with a drop of a single item.
+                        ; Add status box checking to see if that item was consumed or dropped
+                        this.emitEvent(new ItemChangeEvent(this, {event: "use", item: item}))
+                    }
+                }
+                */               
 
                 if (!itemExists)
-                    this.eventStack.push("new-item", new LZEvent("new-item", item))
+                    this.emitEvent(new ItemChangeEvent(this, {event: "new", item: item}))
+                    
 
-                newItems.Push(item)
+                newItems.Item(alphaIndex) := item
             }
 
             index += 1
         }
+        
+        itemDiff = this.items.Count - newItems.Count
+        if (itemDiff != 0) {
+            iterations := 0
+            for itemKey in this.items.Keys {
+                if (!newItems.Exists(itemKey)) {
+                    this.emitEvent(new ItemChangeEvent(this, {event: "drop", item: this.items.Item[itemKey]}))
+                }
 
-        ; Did we loose an item?
-        if (this.items.MaxIndex() > newItems.MaxIndex())
-            this.eventStack.push(new LZEvent("lost-item", {name: "unknown", letter: "unknown"}))
+                iterations += 1
+                if (iterations >= itemDiff)
+                    break
+            }
+        }
         
         this.items := newItems
 

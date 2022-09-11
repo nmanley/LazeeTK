@@ -33,7 +33,8 @@ class Item
     dropable := false
     transferable := false
        
-    __New(letter, ByRef buf) {
+    __New(letter, ByRef buf) 
+    {
 
         this.letter := letter
 
@@ -79,10 +80,5 @@ class Item
                 break
             }           
         }
-    }
-
-    getEventInfo()
-    {
-        return Format("Slot: {:s}, Name: {:s}", this.letter, this.itemName)
     }
 }
