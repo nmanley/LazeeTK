@@ -144,10 +144,10 @@ class LZClient {
     registerTimers() 
     {
         this.timers.Push(new LZTimer("stack", this.eventStack, this.eventStack.processStackItem, 100, -1))
-        this.timers.Push(new LZTimer("client-local", this, this.update__clientLocal, 450, -1))
+        this.timers.Push(new LZTimer("client-local", this, this.update__clientLocal, 400, -1))
         ;this.timers.Push(new LZTimer("update_map", this, this.update__map, 1000, -1))
         ;this.timers.Push(new LZTimer("entities", this, this.update__entities, 800, -1))
-        this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 450, -1))
+        this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 400, -1))
         this.timers.Push(new LZTimer("items", this, this.update__items, 1000, -1))
         this.timers.Push(new LZTimer("spells", this, this.update__spells, 600000, -1))
         ;this.timers.Push(new LZTimer(this, this.outputEntities, 1000, -1))
