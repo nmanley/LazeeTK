@@ -23,8 +23,6 @@ class Coordinate
     xpos := 0
     ypos := 0
 
-    distance := 0
-
     __New(xpos, ypos)
     {
         this.xpos := xpos
@@ -33,8 +31,7 @@ class Coordinate
 
     calculateDistanceFrom(xpos, ypos)
     {
-        this.distance := this.distanceFrom(xpos, ypos)
-        return this.distance
+        return this.distanceFrom(xpos, ypos)
     }
 
     distanceFrom(xpos, ypos)
@@ -44,7 +41,7 @@ class Coordinate
         return (diff_x * diff_x) + (diff_y * diff_y)
     }
 
-    findClosest(coords := [])
+    findClosest(coords)
     {
         closest := 0
         shortestDistance := 0

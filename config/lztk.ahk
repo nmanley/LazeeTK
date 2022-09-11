@@ -36,7 +36,7 @@ Global NTKexe := "C:\Program Files (x86)\KRU\NexusTK\NexusTK.exe"
   * 3 = Debug
   * 4 = Xtreme Debug
   */
-Global LOG_LEVEL := 2
+Global LOG_LEVEL := 4
 
 Global LOG_WRITE_TO_FILE := false
 Global LOG_WRITE_TO_CONSOLE := true

@@ -18,14 +18,35 @@
   *
   */
 
-class MoveEvent extends BaseEvent
+class MoveEvent
 {
-    name := "move"
+    name := "client-move"
+    client := 0
 
-    __New(ByRef source, from, to)
+    currentPos := -1
+    previousPos := -1
+
+    ; Useful for determining jumps, warps, summons.
+    distance := 0
+
+    mapName := ""
+    oldMapName := ""
+
+    __New(ByRef client, payload)
     {
-        this.source := source
-        this.originalValues := from
-        this.newValues := to
+        this.client := client
+        
+        this.currentPos := payload.currentPos
+        this.previousPos := payload.previousPos
+
+        this.mapName := payload.mapName
+        this.oldMapName := ""
+
+        this.distance := this.currentPos.distanceFrom(this.previousPos.xpos, this.previousPos.ypos)
+    }
+
+    loggerOutput()
+    {
+      return Format("Client moved from: [{:i},{:i}] -> [{:i},{:i}] Distance: {:i}", this.previousPos.xpos, this.previousPos.ypos, this.currentPos.xpos, this.currentPos.ypos, this.distance)
     }
 }

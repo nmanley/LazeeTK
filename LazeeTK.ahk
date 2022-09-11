@@ -45,6 +45,7 @@ OnExit("ExitCleanup")
 #Include models/Spell.ahk
 #Include models/Item.ahk
 #Include models/Event.ahk
+#Include models/Coordinate.ahk
 
 #Include modules/LZPathing.ahk
 #Include modules/LZWindow.ahk
@@ -65,8 +66,10 @@ OnExit("ExitCleanup")
 
 ;#Include lib/EventStack.ahk
 
+Global LZ := new LazeeTK()
 Global logger := new LZLogger()
 Global tkmemory := new LZMemory()
+
 Global clients := []
 Global usernames := ["USERNAME"]
 
@@ -94,12 +97,11 @@ TestFunction(event) {
     logger.INFO(Format("Vita Change Event: Diff {:s}, Current: {:s}", event.vitaDiff, event.vitaCurrent))
 } 
 
-NumpadAdd::
-MsgBox, Running Test
-clients[1].window.testSend()
-return
+MoveFunction(event) {
+  logger.INFO(event.loggerOutput())
+}
 
-
+clients[1].subscribeTo("client-move", new Subscription("move", Func("MoveFunction"), 1, -1))
 clients[1].subscribeTo("mana-change", new Subscription("mana-change", Func("TestFunction"), 1, -1))
 clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("TestFunction"), 1, -1))
 
@@ -107,14 +109,19 @@ clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("Test
 while true {
 
   for i, client in clients
-    client.eventStack.processStack()   
+    response := client.eventStack.processStack()
+
+  for i, plugin in plugins
+    plugin.main() 
 
   Sleep 20
 }
 
 ExitCleanup(reason, code)
 {
-  client.detach()
+  for i, client in clients
+    client.detach()
+
   Stdout("Cleanup Successful!")
   ExitApp
 }

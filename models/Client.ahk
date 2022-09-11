@@ -62,15 +62,15 @@ class LZClient {
 
     eventStack              := 0
 
-    __New(){
+    __New(username := false)
+    {
 
         this.window := new LZWindow()
         this.eventStack := new EventStack()
 
-        subscription := new Subscription("client-move", ObjBindMethod(this, "testCallback"), 4, -1)
-        subscription2 := new Subscription("client-move", ObjBindMethod(this, "testCallback2"), 4, -1)
-        this.eventStack.subscribeTo("client-move", subscription)
-        this.eventStack.subscribeTo("client-move", subscription2)
+        if (username != false) {
+            this.attach(username)
+        }
     }
 
     /**
@@ -111,7 +111,8 @@ class LZClient {
       * @param none
       * @return null
       */
-    detach() {
+    detach() 
+    {
         this.mHandle.close()
     }
 
@@ -125,18 +126,9 @@ class LZClient {
       * @param none
       * @return _ClassMemory
       */
-    mem() {
+    mem() 
+    {
         return this.mHandle
-    }
-
-    testCallback(ByRef event)
-    {
-        logger.XDEBUG(Format("Callback successfully called! {:s}", event.name))
-    }
-
-    testCallback2(ByRef event)
-    {
-        logger.XDEBUG(Format("Second Callback executed successfully {:s}", event.name))
     }
 
     /**
@@ -153,7 +145,7 @@ class LZClient {
     {
         this.timers.Push(new LZTimer("stack", this.eventStack, this.eventStack.processStackItem, 100, -1))
         this.timers.Push(new LZTimer("client-local", this, this.update__clientLocal, 450, -1))
-        this.timers.Push(new LZTimer("update_map", this, this.update__map, 1000, -1))
+        ;this.timers.Push(new LZTimer("update_map", this, this.update__map, 1000, -1))
         ;this.timers.Push(new LZTimer("entities", this, this.update__entities, 800, -1))
         this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 450, -1))
         this.timers.Push(new LZTimer("items", this, this.update__items, 1000, -1))
@@ -217,7 +209,8 @@ class LZClient {
         manaMax := this.manaMax
         vitaCurrent := this.vitaCurrent
         vitaMax := this.vitaMax
-        
+        mapName := this.mapName
+        this.mapName := tkmemory.clientLocal.mapName.readString(this.mHandle)
 
         tkm := tkmemory.clientLocal
         VarSetCapacity(buf, tkm.structSize)  
@@ -230,9 +223,14 @@ class LZClient {
         this.manaMax := tkm.manaMax.readFromBuffer(buf)
         this.vitaCurrent := tkm.vitaCurrent.readFromBuffer(buf)
         this.vitaMax := tkm.vitaMax.readFromBuffer(buf)
+        this.mapName := tkm.mapName.readStringFromBuffer(buf)
         
-        if (xpos != this.xpos or ypos != this.ypos)
-            this.eventStack.push(new LZEvent("client-move", new MoveEvent(this, cooridinates, this.coordinates)))            
+        if (xpos != this.xpos or ypos != this.ypos) 
+            this.eventStack.push(new MoveEvent(this, {currentPos: new Coordinate(this.xpos, this.ypos), previousPos: new Coordinate(xpos, ypos), mapName: this.mapName, oldMapName: mapName}))
+
+        if (map != this.mapName) {
+            this.eventsStack.push(new LZEvent("map-change", {prev: map, new: this.mapName}))
+        }  
         
         if (gold != this.gold)
             this.eventStack.push(new LZEvent("gold-change", {prev: gold, new: this.gold}))
