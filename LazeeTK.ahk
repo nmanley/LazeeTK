@@ -72,7 +72,7 @@ Global logger := new LZLogger()
 Global tkmemory := new LZMemory()
 
 Global clients := []
-Global usernames := ["cPlusPlus"]
+Global usernames := ["USERNAMES HERE"]
 
 
 for i, username in usernames {
