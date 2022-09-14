@@ -20,30 +20,30 @@
 
 class EventStack {
 
-    stack := []
     subscriptions := []
-    
-    processStackItem() 
-    {
-      event := this.pop()
 
-      if (event) {
+    __New()
+    {
+      this.stack := []
+    }
+    
+    processStack() 
+    {
+      stackCount := this.stack.Count()
+      if (stackCount = 0)
+        return
+
+      while this.stack.Count() {
         
-        ;logger.XDEBUG(Format("[Event] {:s} --{:s}", event.name, event.eventDescriptionAsString()))
+        event := this.stack.Pop()
 
         if (this.subscriptions.HasKey(event.name)) {
           for i, subscriber in this.subscriptions[event.name] {
 
-            if subscriber.__Class != "Subscription" {
-              logger.DEBUG("Subscription not callable must be of class type: Subscription")
-            }
-            else {
-
-              response := subscriber.__Callback(event)
-              
-              if (!response) 
-                this.subscriptions[event.name].RemoveAt(i)
-            }   
+            response := subscriber.__Callback(event)
+            
+            if (!response) 
+              this.subscriptions[event.name].RemoveAt(i)   
           }
         }
       }

@@ -62,6 +62,11 @@ class LZClient {
 
     eventStack              := 0
 
+    timeBetweenSwing        := 100
+    nextSwingTime           := 0
+    useAxeLastNonce         := 0
+    
+
     __New(username := false)
     {
 
@@ -145,15 +150,15 @@ class LZClient {
       */
     registerTimers() 
     {
-        this.timers.Push(new LZTimer("stack", this.eventStack, this.eventStack.processStackItem, 100, -1))
-        this.timers.Push(new LZTimer("client-local", this, this.update__clientLocal, 400, -1))
-        ;this.timers.Push(new LZTimer("update_map", this, this.update__map, 1000, -1))
-        ;this.timers.Push(new LZTimer("entities", this, this.update__entities, 800, -1))
-        this.timers.Push(new LZTimer("statusbox", this, this.fetch__statusBoxEntry, 450, -1))
-        this.timers.Push(new LZTimer("items", this, this.update__items, 1000, -1))
-        this.timers.Push(new LZTimer("spells", this, this.update__spells, 600000, -1))
-        ;this.timers.Push(new LZTimer(this, this.outputEntities, 1000, -1))
-        return this.timers
+        this.timers.Push(new LZTimer("stack", ObjBindMethod(this.eventStack, "processStack"), 250, 0, -1))
+        this.timers.Push(new LZTimer("client-local", ObjBindMethod(this, "update__clientLocal"), 400, 0, -1))
+        ;this.timers.Push(new LZTimer("update_map", ObjBindMethod(this, "update__map"), 1000, -1))
+        this.timers.Push(new LZTimer("entities", ObjBindMethod(this, "update__entities"), 5000, -1))
+        this.timers.Push(new LZTimer("statusbox", ObjBindMethod(this, "fetch__statusBoxEntry"), 550, 0, -1))
+        this.timers.Push(new LZTimer("items", ObjBindMethod(this, "update__items"), 1000, 10, -1))
+        this.timers.Push(new LZTimer("spells", ObjBindMethod(this, "update__spells"), 600000, 50, -1))
+
+        this.update__entities()
     }
 
     /**
@@ -215,7 +220,8 @@ class LZClient {
       * @param none
       * @return bool
       */
-    update__clientLocal() {
+    update__clientLocal() 
+    {
         
         ; Saving for comparison later
         xpos := this.xpos
@@ -227,7 +233,8 @@ class LZClient {
         vitaCurrent := this.vitaCurrent
         vitaMax := this.vitaMax
         mapName := this.mapName
-        this.mapName := tkmemory.clientLocal.mapName.readString(this.mHandle)
+
+        this.update__map()
 
         tkm := tkmemory.clientLocal
         VarSetCapacity(buf, tkm.structSize)  
@@ -240,14 +247,10 @@ class LZClient {
         this.manaMax := tkm.manaMax.readFromBuffer(buf)
         this.vitaCurrent := tkm.vitaCurrent.readFromBuffer(buf)
         this.vitaMax := tkm.vitaMax.readFromBuffer(buf)
-        this.mapName := tkm.mapName.readStringFromBuffer(buf)
         
         if (xpos != this.xpos or ypos != this.ypos) 
             this.emitEvent(new ClientMoveEvent(this, {currentPos: new Coordinate(this.xpos, this.ypos), previousPos: new Coordinate(xpos, ypos), mapName: this.mapName, oldMapName: mapName}))
 
-        if (map != this.mapName)
-            this.emitEvent(new MapChangeEvent(this, {mapName: this.mapName, oldMapName: mapName}))
-        
         if (gold != this.gold)
             this.emitEvent(new GoldChangeEvent(this, {amount: this.gold, oldAmount: gold}))
 
@@ -276,13 +279,14 @@ class LZClient {
       * @param none
       * @return bool
       */
-    update__map() {
+    update__map() 
+    {
         ;StdOut(Format("Map Name {:s}", this.mapName))
         map := this.mapName
         this.mapName := tkmemory.clientLocal.mapName.readString(this.mHandle)
 
         if (map != this.mapName) {
-            this.eventsStack.push(new LZEvent("map-change", {prev: map, new: this.mapName}))
+            this.emitEvent(new MapChangeEvent(this, {mapName: this.mapName, oldMapName: mapName}))
         }
     
         return true
@@ -298,7 +302,8 @@ class LZClient {
       * @param none
       * @return bool
       */
-    update__spells() {
+    update__spells() 
+    {
 
         tkm := tkmemory.spells
         newSpells := []
@@ -336,7 +341,8 @@ class LZClient {
       * @param none
       * @return bool
       */
-    update__items() {
+    update__items() 
+    {
 
         tkm := tkmemory.items
         newItems := ComObjCreate("Scripting.Dictionary")
@@ -399,9 +405,10 @@ class LZClient {
             }
         }
         
+        this.items := ""  ; Delisting so they property get destroyed. For some reason, garbage collection isn't picking them up.
         this.items := newItems
 
-        return true
+        return false
     }
 
     /**
@@ -414,39 +421,95 @@ class LZClient {
       * @param none
       * @return bool
       */
-    update__entities() {
+    update__entities() 
+    {
 
         tkm := tkmemory.entities
-        newEntities := {}
+        newEntities := ComObjCreate("Scripting.Dictionary")
+        scanning := true
+        bucketDepth := 0
+        nextBucket := 0x00
+        bucketSizeInt := 30 ; 30 * 0x20c = 0x3D6F
+        bucketSize := 0x3D6F
+        nullPtr := 0x00
+        baseAddr := tkm.baseAddr
 
-        recursiveScanning := true
-        
-        iterCount := 0
+        logger.XDEBUG(Format("Reading Address: {:x}", this.mHandle.pointer(tkm.baseAddr, "UInt")))
+        logger.XDEBUG(Format("Reading Address: {:x}", this.mHandle.pointer(tkm.baseAddr, "UInt", 0x0)))
+        logger.XDEBUG(Format("Reading Address: {:x}", this.mHandle.pointer(tkm.baseAddr, "UInt", [0x0, 0x0])))
 
-        for i, offset in tkm.vTableOffsets {
+        for i, vOffset in tkm.vTableOffsets {
 
-            nextEntity := tkm.baseAddr + offset
+            offset := [0x00]
+        }
+        VarSetCapacity(buf, 0x20C)
+        args := [0x00]
+        this.mHandle.readRaw(tkm.baseAddr + 0x04, buf, 0x20C, args*) 
+
+        logger.INFO(Format("Entity Test: [ID] {:i}", NumGet(buf, 0x100, "UInt")))
+        logger.INFO(Format("Entity Test: [ID] {:i}", NumGet(buf, 0xFC, "UInt")))
+
+        return
+        while scanning {
             
-            while recursiveScanning {
+            if (bucketDepth = 0)
+                baseAddr := tkm.baseAddr
+            else if (bucketDepth = 1)
+                baseAddr := this.mHandle.pointer(tkm.baseAddr, "UInt", 0x00)
+            else {
+                offsets := []
+                loop bucketDepth
+                    offsets.Push(0x00)
 
-                iterCount += 1
-                VarSetCapacity(buf, tkm.structSize)
-                this.mHandle.readRaw(nextEntity, buf, tkm.structSize)
-                ; Reading next address from block
-                nextEntity := NumGet(buf, 0x00, "UInt")
-
-                uid := tkm.uid.readFromBuffer(buf)
-                logger.DEBUG(Format("Found UID {:i}", uid))
-
-                if(uid != 0x00)
-                    newEntities[uid] := new LZEntity(buf)
-
-                if (nextEntity = 0x00 or nextEntity = 0x61CF68)
-                    recursiveScanning := false             
+                baseAddr := this.mHandle.pointer(tkm.baseAddr, "UInt", offsets)
             }
+
+            VarSetCapacity(buf, 0x20C)
+            tkm.readRaw(baseAddr, buf, 0x20C, 0x04)
+            ;tkm.readRaw(tkm.baseAddr, buf, 4+0x20C)
+            logger.INFO(Format("Entity ID: {:i} {:x} From Address: {:x}", NumGet(buf, (0x04 + 0xFC), "UInt"), NumGet(buf, 0xFC + 4, "UInt"), baseAddr))
+
+   
+            ; Null pointer?
+            if (baseAddr = 0 OR baseAddr = 0x00) {
+                logger.INFO("Breaking from scan loop")
+                scanning := false
+                break
+            }
+
+            bucketDepth += 1
+            continue
+
+            logger.XDEBUG(Format("Reading from address: {:i} {:x}", baseAddr, baseAddr))            
+            
+            entityBufferPosition := 0            
+            ; Looping throught each of the 30 entity slots.
+            while entityBufferPosition < 30 {
+
+                VarSetCapacity(buf, 0x20C)
+                tkm.readRaw(baseAddr + (0x20C * entityBufferPosition), buf)
+                logger.DEBUG(Format("Fetching: {:i} {:x}",0 NumGet(buf, 0xFC, "UInt"), baseAddr + (0x20C * entityBufferPosition)))
+                
+                
+                entityId := tkm.uid.readFromBuffer(buf, 4)
+                if (entityId != 0) {
+
+                    newEntity := new Entity(buf, 4)
+                    newEntities.Item(entityId) := newEntity
+                    logger.INFO(Format("Found UID: {:i}, xpos: {:i}, ypos: {:i} [NAME]: {:s}", entityId, newEntity.xpos, newEntity.ypos, newEntity.name))
+                }
+                else {
+                    logger.INFO(Format("No entity found."))
+                }
+
+                entityBufferPosition += 1
+            }
+                
+            bucketDepth += 1
         }
         
         
+        /*
         for i, entity in this.entities {
             if (newEntities.HasKey(entity.uid)) {
 
@@ -473,6 +536,7 @@ class LZClient {
             this.entities[entity.uid] := entity
             this.events.Push(new LZEvent("entity-appeared", {uid: entity.uid, location: [entity.xpos, entity.ypos]}))
         }
+        */
 
         return true
 
@@ -489,7 +553,8 @@ class LZClient {
       * @param none
       * @return bool
       */
-    fetch__statusBoxEntry() {
+    fetch__statusBoxEntry() 
+    {
 
         tkm := tkmemory.statusBox
 
@@ -503,6 +568,16 @@ class LZClient {
         }
 
         return true
+    }
+
+    lastStatusBoxEntry()
+    {
+        return this.statusBox[this.statusBox.Count()]
+    }
+
+    assertLastStatusBoxEntry(text)
+    {
+        return (this.lastStatusBoxEntry() = text) ? true : false
     }
 
     /**
@@ -540,18 +615,48 @@ class LZClient {
       * @param [string] name
       * @return bool
       */
-    use(name) {
+    use(name) 
+    {
+        item := this.item(name)
+        if (item) {
+            cmd := Format("{:s}u{:s}", "{ESC}", item.letter)
+            logger.INFO(Format("Using item {:s} with the following command: {:s}", item.name, cmd))
+            
+            return this.sendKeys(cmd)            
+        }
+        else {
+            return false
+        }
+    }
 
-        for i, item in this.items {
-            if InStr(item.name, name) {
-                cmd := Format("{:s}u{:s}", "{ESC}", item.letter)
-                StdOut(Format("Using item {:s} in slot {:s}", item.name, item.letter))
-                this.sendKeys(cmd)
+    useAxe()
+    {
+        if (this.useAxeLastNonce != this.statusBoxLastNonce) {
+            this.use("Axe")
+            this.useAxeLastNonce := this.statusBoxLastNonce
+        }
+    }
+
+    swing()
+    {
+        if (this.nextSwingTime <= A_TickCount) {
+            this.sendKeys("{Space}")
+            this.nextSwingTime := A_TickCount + this.timeBetweenSwing
+        }
+    }
+
+    item(name)
+    {
+        response := false
+
+        for item in this.items.Items {
+            if (item.itemName = name) {
+                response := item
                 break
             }
         }
 
-        return true
+        return response
     }
 
     /**
@@ -675,10 +780,12 @@ class LZClient {
       * @return bool
       */
     sendKeys(key) {
-        pid := this.pid
+
+        ;logger.INFO(Format("Sending Keys To Client {:i}: {:s}", this.window.pid, key))
+        pid := this.window.pid
         ;key := GetKeyVK(key)
         ;PostMessage, 0x100, %key%, 01000010,, ahk_pid %pid%
-        ControlSend,, %key%, ahk_pid %pid%
+        ControlSend,, %key%, % "ahk_pid " pid
 
         return true
     }

@@ -74,9 +74,9 @@ class MemoryAddress
       * @param [Buf] buf
       * @return mixed
       */
-    readFromBuffer(ByRef buf)
+    readFromBuffer(ByRef buf, blockOffset := 0)
     {
-        return NumGet(buf, this.offsets, this.encoding)
+        return NumGet(buf, blockOffset + this.offsets, this.encoding)
     }
 
     /**
@@ -89,9 +89,9 @@ class MemoryAddress
       * @param [Buf] buf
       * @return string
       */
-    readStringFromBuffer(ByRef buf)
+    readStringFromBuffer(ByRef buf, blockOffset := 0)
     {
-        return StrGet(&buf + this.offsets,, this.encoding)
+        return StrGet(&buf + blockOffset + this.offsets,, this.encoding)
     }
 
 }

@@ -18,30 +18,39 @@
   *
   */
 
-class LZTimer {
+class LZTimer 
+{
+
     name := ""
     period := 0
-    classRef := 0
-    method := 0
-    args := 0
+    boundClassMethod := -1
     priority := 0
     iterations := -1 ; Run indefinitely
     iterCount := 0
     
-    __New(name, ByRef classRef, method, period, priority := 1, iterations := -1, args*) {
+    __New(name, callback, period, priority, interations := -1)
+    {
+        /*
+        if (!IsFunc(boundClassMethod)) {
+            logger.ERROR(Format("LZTimer was passed a non function callback for {:s}", name))
+            return false
+        } 
+        */           
+
         this.name := name
+        this.callback := callback
         this.priority := priority
         this.period := period
-        this.classRef := IsObject(classRef) ? classRef : StdErr("Non object type passed to LZTimer") ; Call type
-        this.method := method
-        this.args := args
-        SetTimer %this%, %period%
-        ;StdOut(Format("New Timer Created {:s} running every {:i} ms", this.name, this.period))
-    }
 
-    __Call() {
+        SetTimer %this%, %period%
+    }
+    
+    __Call() 
+    {
         ;StdOut(Format("Timer Called {:s}, {:i} times.", this.name, this.iterCount))
-        callable := this.method.(this.classRef)
+        ;logger.DEBUG(Format("Calling Class Method On Timer: {:s} -- {:s}", this.name, this.boundClassMethod))
+        this.callback()
+
         this.iterCount += 1
         if this.iterations != -1 {
             if (this.iterCount >= this.iterations) {
@@ -51,7 +60,8 @@ class LZTimer {
         }
     }
 
-    Delete() {
+    __Delete() 
+    {
         SetTimer, %this%, Delete
     }
 }

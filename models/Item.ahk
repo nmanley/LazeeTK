@@ -21,9 +21,7 @@
 class Item
 {
 
-    position := 0
     letter := ""
-    type := 0
     name := ""
     itemName := ""
     qty := 0
@@ -43,6 +41,9 @@ class Item
         this.itemName := tkm.itemName.readStringFromBuffer(buf)
         this.qty := tkm.qty.readFromBuffer(buf)
 
+        tkm := ""
+        
+        /*
         wines := ["Rice wine", "Herb pipe", "Sonhi pipe"]
         scrolls := ["Yellow scroll", "Kindred talisman"]
         weapons := ["Axe", "Throwing axe", "Forged kallal", "Breeze fan"]
@@ -65,6 +66,7 @@ class Item
         if this.type = 0 {
             this.type := "unknown"
         }
+        
 
         qtyDelimiters := ["[", "("]
         
@@ -80,5 +82,8 @@ class Item
                 break
             }           
         }
+        */
+
+        return this
     }
 }

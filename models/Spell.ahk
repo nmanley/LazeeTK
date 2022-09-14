@@ -32,7 +32,8 @@ class Spell
     utility := false
     
 
-    __New(letter, ByRef buf) {
+    __New(letter, ByRef buf) 
+    {
 
         this.letter := letter
         this.readSpellProperties(buf)
@@ -48,7 +49,8 @@ class Spell
       * @param [Buf] buf
       * @return bool
       */
-    readSpellProperties(Byref buf) {
+    readSpellProperties(Byref buf) 
+    {
         
         tkm := tkmemory.spells
         this.type := tkm.type.readFromBuffer(buf)

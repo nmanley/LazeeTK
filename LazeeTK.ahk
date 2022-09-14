@@ -22,10 +22,11 @@
 #SingleInstance force
 RunAs, Administrator
 SendMode, Event
+SetBatchLines, -1
 DetectHiddenWindows On
 SetWorkingDir, %A_ScriptDir%
 SetKeyDelay -1, -1
-ListLines Off
+ListLines 1
 
 OnExit("ExitCleanup")
 
@@ -42,10 +43,8 @@ OnExit("ExitCleanup")
 #Include models/Entity.ahk
 #Include models/Spell.ahk
 #Include models/Item.ahk
-#Include models/Event.ahk
 #Include models/Coordinate.ahk
 
-#Include modules/LZPathing.ahk
 #Include modules/LZWindow.ahk
 #Include modules/LZTimer.ahk
 
@@ -72,7 +71,7 @@ Global logger := new LZLogger()
 Global tkmemory := new LZMemory()
 
 Global clients := []
-Global usernames := ["USERNAMES HERE"]
+Global usernames := ["cPlusPlus"]
 
 
 for i, username in usernames {
@@ -104,18 +103,40 @@ clients[1].subscribeTo("client-move", new Subscription("move", Func("EventDebugF
 clients[1].subscribeTo("mana-change", new Subscription("mana-change", Func("EventDebugFunction"), 1, -1))
 clients[1].subscribeTo("vita-change", new Subscription("vita-change", Func("EventDebugFunction"), 1, -1))
 
+Global swingEnabled := false
 
+while true {  
 
-while true {
+  if (swingEnabled) { 
 
-  for i, client in clients
-    response := client.eventStack.processStack()
+    ; Map name safe guard
+    if (clients[1].mapName != "Bear Forest") {
+      swingEnabled := false
+    }
 
-  for i, plugin in plugins
-    plugin.main() 
+    clients[1].swing()
 
-  Sleep 20
+    ; Axe broke
+    if (clients[1].assertLastStatusBoxEntry("You are unable to chop with bare hands and a full pack.") OR clients[1].assertLastStatusBoxEntry("Your Axe broke!")) {
+      Random, randomWait, 0, 8
+      if (randomWait = 3) {             
+        clients[1].useAxe()
+      }
+    }
+
+    if (clients[1].item("Ginko wood").qty = 30) {
+      swingEnabled := false
+      MsgBox You need to deposit your Ginkos
+    }
+
+      
+  }
 }
+
+NumpadAdd::
+  swingEnabled := (swingEnabled) ? false : true
+  logger.INFO(Format("Swing Toggled to: {:s}", (swingEnabled) ? "On" : "Off"))
+Return
 
 ExitCleanup(reason, code)
 {

@@ -127,7 +127,7 @@ class LZMemory
       this.entities.nullPtr       := 0x00
       this.entities.structOffset  := 0x00
       this.entities.nextBucket    := 0x04
-      this.entities.bucketSize    := 10
+      this.entities.bucketSize    := 0x3d6F
 
       ; 2C must be something with the map
       ; 
@@ -139,8 +139,8 @@ class LZMemory
       this.entities.drawWidth     := new MemoryAddress(this.entities.baseAddr, 0x4C, "UInt", 4)
       this.entities.drawHeight    := new MemoryAddress(this.entities.baseAddr, 0x50, "UInt", 4)
       this.entities.uid           := new MemoryAddress(this.entities.baseAddr, 0xFC, "UInt", 4)
-      this.entities.xpos          := new MemoryAddress(this.entities.baseAddr, 0x100, "UChar", 1)
-      this.entities.ypos          := new MemoryAddress(this.entities.baseAddr, 0x104, "UChar", 1)
+      this.entities.xpos          := new MemoryAddress(this.entities.baseAddr, 0x100, "UInt", 4)
+      this.entities.ypos          := new MemoryAddress(this.entities.baseAddr, 0x104, "UInt", 4)
       this.entities.imageId       := new MemoryAddress(this.entities.baseAddr, 0x50, "UChar", 1)
       this.entities.name          := new MemoryAddress(this.entities.baseAddr, 0x12A, "utf-16", 10)
       this.entities.faceDir       := new MemoryAddress(this.entities.baseAddr, 0x1C4, "UChar", 1)

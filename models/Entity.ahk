@@ -25,8 +25,8 @@ class Entity
     type := 0
     drawWidth := 0
     drawHeight := 0
-    xPos := 0
-    yPos := 0
+    xpos := 0
+    ypos := 0
     imageId := 0
     name := 0
     faceDir := 0 ; 4 bytes [128=Up, 256=Right, 512=Down, 768=Left]
@@ -42,9 +42,10 @@ class Entity
       * @param [Buf] buf
       * @return null
       */
-    __New(ByRef buf) {
+    __New(ByRef buf, bufferOffset := 0) 
+    {
       
-      this.readEntityProperties(buf)
+      this.readEntityProperties(buf, bufferOffset)
     }
 
     /**
@@ -57,20 +58,21 @@ class Entity
       * @param [Buf] buf
       * @return null
       */
-    readEntityProperties(ByRef buf) {
+    readEntityProperties(ByRef buf, bufferOffset) 
+    {
 
       tkm := tkmemory.entities
 
-      this.uid := tkm.uid.readFromBuffer(buf)
-      this.drawWidth      := tkm.drawWidth.readFromBuffer(buf)
-      this.drawHeight     := tkm.drawHeight.readFromBuffer(buf)
-      this.xpos           := tkm.xpos.readFromBuffer(buf)
-      this.ypos           := tkm.ypos.readFromBuffer(buf)
-      this.imageId        := tkm.imageId.readFromBuffer(buf)
-      this.name           := tkm.name.readStringFromBuffer(buf)
-      this.faceDir        := tkm.faceDir.readFromBuffer(buf)
-      this.vitaBarPtr     := tkm.vitaBarPtr.readFromBuffer(buf)
-      this.manaBarPtr     := tkm.manaBarPtr.readFromBuffer(buf)
+      this.uid := tkm.uid.readFromBuffer(buf, bufferOffset)
+      this.drawWidth      := tkm.drawWidth.readFromBuffer(buf, bufferOffset)
+      this.drawHeight     := tkm.drawHeight.readFromBuffer(buf, bufferOffset)
+      this.xpos           := tkm.xpos.readFromBuffer(buf, bufferOffset)
+      this.ypos           := tkm.ypos.readFromBuffer(buf, bufferOffset)
+      this.imageId        := tkm.imageId.readFromBuffer(buf, bufferOffset)
+      this.name           := tkm.name.readStringFromBuffer(buf, bufferOffset)
+      this.faceDir        := tkm.faceDir.readFromBuffer(buf, bufferOffset)
+      this.vitaBarPtr     := tkm.vitaBarPtr.readFromBuffer(buf, bufferOffset)
+      this.manaBarPtr     := tkm.manaBarPtr.readFromBuffer(buf, bufferOffset)
       
       ;Stdout(Format("[Entity] {:i} [Coords] {:i},{:i} [Name] {:s}", this.uid, this.xpos, this.ypos, this.name))
     }
@@ -85,7 +87,8 @@ class Entity
       * @param [Object] newValues
       * @return array
       */
-    compare(newValues) {
+    compare(newValues) 
+    {
 
     }
 
@@ -100,7 +103,8 @@ class Entity
       * @param [_ClassMemory] mHandle
       * @return array
       */
-    compareFromPtr(ByRef memory, ByRef mHandle) {
+    compareFromPtr(ByRef memory, ByRef mHandle) 
+    {
 
       return this.compare(newValues)
     }
@@ -115,7 +119,8 @@ class Entity
       * @param [_ClassMemory] mHandle
       * @return self
       */
-    hydrateFromPtr(ByRef mHandle) {
+    hydrateFromPtr(ByRef mHandle) 
+    {
 
       
     }
@@ -131,12 +136,11 @@ class Entity
       * @param [Client] client
       * @return bool
       */
-    cast(ByRef spell, ByRef client) {
+    cast(ByRef spell, ByRef client) 
+    {
       
       client.send("{shift}z")
       client.send()
     }
-
-
-        
+       
 }
